@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func UpdateSignalHandler(cm *clock.ClockManager) http.HandlerFunc {
+func UpdateSignalHandler(cm *clock.Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
@@ -22,7 +22,7 @@ func UpdateSignalHandler(cm *clock.ClockManager) http.HandlerFunc {
 	}
 }
 
-func UpdateIntervalHandler(cm *clock.ClockManager) http.HandlerFunc {
+func UpdateIntervalHandler(cm *clock.Manager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)

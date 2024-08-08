@@ -17,14 +17,14 @@ type Signal struct {
 	BongInterval time.Duration
 }
 
-type ClockManager struct {
+type Manager struct {
 	signals Signal
 	Updates chan Signal
 	db      *database.Database
 	mu      sync.Mutex
 }
 
-func NewClockManager(db *database.Database) *ClockManager {
+func NewManager(db *database.Database) *Manager {
 	initialSignals := Signal{
 		TickMessage:  "tick",
 		TockMessage:  "tock",
@@ -34,14 +34,14 @@ func NewClockManager(db *database.Database) *ClockManager {
 		BongInterval: 1 * time.Hour,
 	}
 
-	return &ClockManager{
+	return &Manager{
 		signals: initialSignals,
 		Updates: make(chan Signal, 1),
 		db:      db,
 	}
 }
 
-func (cm *ClockManager) Run() {
+func (cm *Manager) Run() {
 	tickTicker := time.NewTicker(cm.signals.TickInterval)
 	tockTicker := time.NewTicker(cm.signals.TockInterval)
 	bongTicker := time.NewTicker(cm.signals.BongInterval)
@@ -50,11 +50,11 @@ func (cm *ClockManager) Run() {
 	for {
 		select {
 		case <-tickTicker.C:
-			cm.logSignal(cm.signals.TickMessage)
+			cm.LogSignal(cm.signals.TickMessage)
 		case <-tockTicker.C:
-			cm.logSignal(cm.signals.TockMessage)
+			cm.LogSignal(cm.signals.TockMessage)
 		case <-bongTicker.C:
-			cm.logSignal(cm.signals.BongMessage)
+			cm.LogSignal(cm.signals.BongMessage)
 		case newsignals := <-cm.Updates:
 			cm.mu.Lock()
 			cm.signals = newsignals
@@ -75,14 +75,14 @@ func (cm *ClockManager) Run() {
 	}
 }
 
-func (cm *ClockManager) logSignal(message string) {
+func (cm *Manager) LogSignal(message string) {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 	fmt.Println(message)
 	cm.db.LogSignal(message)
 }
 
-func (cm *ClockManager) UpdateSignals(newsignals Signal) {
+func (cm *Manager) UpdateSignals(newsignals Signal) {
 	cm.signals.TickMessage = newsignals.TickMessage
 	cm.signals.TockMessage = newsignals.TockMessage
 	cm.signals.BongMessage = newsignals.BongMessage
@@ -90,55 +90,62 @@ func (cm *ClockManager) UpdateSignals(newsignals Signal) {
 	select {
 	case cm.Updates <- cm.signals:
 		log.Printf("Signal update: tick %s, tock %s, bong %s\n",
-		cm.signals.TickMessage, cm.signals.TockMessage, cm.signals.BongMessage)
+			cm.signals.TickMessage, cm.signals.TockMessage, cm.signals.BongMessage)
 	default:
 		log.Println("Failed to queue signal update: channel is blocked")
 	}
 }
 
-func (cm *ClockManager) UpdateIntervals(tickInterval, tockInterval, bongInterval string) error {
+func (cm *Manager) UpdateIntervals(tickInterval, tockInterval, bongInterval string) error {
+	parseDuration := func(interval string) (time.Duration, error) {
+		return time.ParseDuration(interval)
+	}
+
+	tickDur, err := parseDuration(tickInterval)
+	if err != nil {
+		return err
+	}
+
+	tockDur, err := parseDuration(tockInterval)
+	if err != nil {
+		return err
+	}
+
+	bongDur, err := parseDuration(bongInterval)
+	if err != nil {
+		return err
+	}
+
 	cm.mu.Lock()
-	defer cm.mu.Unlock()
+	cm.signals.TickInterval = tickDur
+	cm.signals.TockInterval = tockDur
+	cm.signals.BongInterval = bongDur
+	cm.mu.Unlock()
 
-	if d, err := time.ParseDuration(tickInterval); err == nil {
-		cm.signals.TickInterval = d
-	} else {
-		return err
+	select {
+	case cm.Updates <- cm.signals:
+		log.Printf("Updated intervals to: tick %s, tock %s, bong %s\n",
+			cm.signals.TickInterval, cm.signals.TockInterval, cm.signals.BongInterval)
+	default:
+		log.Println("Failed to queue interval update: channel is blocked")
 	}
-
-	if d, err := time.ParseDuration(tockInterval); err == nil {
-		cm.signals.TockInterval = d
-	} else {
-		return err
-	}
-
-	if d, err := time.ParseDuration(bongInterval); err == nil {
-		cm.signals.BongInterval = d
-	} else {
-		return err
-	}
-
-	cm.Updates <- cm.signals
-
-	log.Printf("Updated intervals to: tick %s, tock %s, bong %s\n",
-		cm.signals.TickInterval, cm.signals.TockInterval, cm.signals.BongInterval)
 
 	return nil
 }
 
-func (cm *ClockManager) GetTickInterval() time.Duration {
+func (cm *Manager) GetTickInterval() time.Duration {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 	return cm.signals.TickInterval
 }
 
-func (cm *ClockManager) GetTockInterval() time.Duration {
+func (cm *Manager) GetTockInterval() time.Duration {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 	return cm.signals.TockInterval
 }
 
-func (cm *ClockManager) GetBongInterval() time.Duration {
+func (cm *Manager) GetBongInterval() time.Duration {
 	cm.mu.Lock()
 	defer cm.mu.Unlock()
 	return cm.signals.BongInterval

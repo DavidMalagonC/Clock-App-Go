@@ -1,7 +1,8 @@
 package database
 
 import (
-	  "testing"
+	"testing"
+
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -49,4 +50,3 @@ func TestLogSignalErrorHandling(t *testing.T) {
 		t.Error("expected database to be closed")
 	}
 }
-

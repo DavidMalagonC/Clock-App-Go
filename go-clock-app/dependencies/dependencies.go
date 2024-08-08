@@ -15,16 +15,17 @@ func Initialize() error {
 		dbPath = "./signals.db"
 	}
 	db := database.NewDatabase(dbPath)
-	cm := clock.NewClockManager(db)
+	cm := clock.NewManager(db)
 
 	go cm.Run()
 
 	http.HandleFunc("/update-signals", signals.UpdateSignalHandler(cm))
 	http.HandleFunc("/update-intervals", signals.UpdateIntervalHandler(cm))
-	fmt.Println("Server started on port 8080")
+	
 	if err := http.ListenAndServe(":8080", nil); err != nil {
 		fmt.Println("Error starting server:", err)
 		return err
 	}
+	fmt.Println("Server started on port 8080")
 	return nil
 }

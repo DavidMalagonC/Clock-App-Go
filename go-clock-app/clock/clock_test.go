@@ -1,15 +1,15 @@
 package clock
 
 import (
+	"go-clock-app/database"
 	"testing"
 	"time"
-	"go-clock-app/database"
 )
 
-func TestNewClockManager(t *testing.T) {
+func TestNewManager(t *testing.T) {
 	db := database.NewDatabase(":memory:")
 
-	cm := NewClockManager(db)
+	cm := NewManager(db)
 
 	if cm.signals.TickMessage != "tick" {
 		t.Errorf("expected 'tick', got '%s'", cm.signals.TickMessage)
@@ -38,7 +38,7 @@ func TestNewClockManager(t *testing.T) {
 
 func TestUpdateSignals(t *testing.T) {
 	db := database.NewDatabase(":memory:")
-	cm := NewClockManager(db)
+	cm := NewManager(db)
 	newSignals := Signal{
 		TickMessage: "quack",
 		TockMessage: "dong",
@@ -67,7 +67,7 @@ func TestUpdateSignals(t *testing.T) {
 
 func TestUpdateIntervals(t *testing.T) {
 	db := database.NewDatabase(":memory:")
-	cm := NewClockManager(db)
+	cm := NewManager(db)
 
 	err := cm.UpdateIntervals("5s", "3m", "2h")
 	if err != nil {
@@ -89,10 +89,10 @@ func TestUpdateIntervals(t *testing.T) {
 
 func TestLogSignal(t *testing.T) {
 	db := database.NewDatabase(":memory:")
-	cm := NewClockManager(db)
+	cm := NewManager(db)
 
 	message := "test message"
-	cm.logSignal(message)
+	cm.LogSignal(message)
 
 	row := db.QueryRow("SELECT message FROM signals WHERE message = ?", message)
 	var storedMessage string

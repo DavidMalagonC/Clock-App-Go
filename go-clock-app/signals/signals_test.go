@@ -13,7 +13,7 @@ import (
 
 func TestUpdateSignalHandler(t *testing.T) {
 	db := database.NewDatabase(":memory:")
-	cm := clock.NewClockManager(db)
+	cm := clock.NewManager(db)
 	handler := UpdateSignalHandler(cm)
 
 	newSignals := clock.Signal{
@@ -60,7 +60,7 @@ func TestUpdateSignalHandler(t *testing.T) {
 
 func TestUpdateIntervalHandler(t *testing.T) {
 	db := database.NewDatabase(":memory:")
-	cm := clock.NewClockManager(db)
+	cm := clock.NewManager(db)
 	handler := UpdateIntervalHandler(cm)
 
 	newIntervals := struct {
@@ -103,4 +103,3 @@ func TestUpdateIntervalHandler(t *testing.T) {
 		t.Errorf("expected 2h, got %s", cm.GetBongInterval())
 	}
 }
-
